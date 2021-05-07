@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Observable } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 
-export const useObservable = <T extends any>(observable: Observable<T>, defaultValue: T): T => {
-    const [state, setState] = useState<T>(defaultValue);
+export const useObservable = <T extends any>(observable: BehaviorSubject<T>): T => {
+    const [state, setState] = useState<T>(observable.getValue());
 
     useEffect(() => {
         const sub = observable.subscribe(setState);

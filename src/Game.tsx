@@ -4,25 +4,28 @@ import { BehaviorSubject } from 'rxjs';
 import { config } from './config';
 import { useObservable } from './hooks/useObservable';
 import { GameModel, getDefaultGameData } from './models/models';
-import GameData from './utils/GameData';
+import { GameLogic } from './utils/GameLogic';
 
 export const Game: React.FC = () => {
-    const gameDataObservable = useRef<BehaviorSubject<GameModel>>(new BehaviorSubject<GameModel>(getDefaultGameData()));
-    const gameData = useObservable<GameModel>(gameDataObservable.current, getDefaultGameData());
+    const gameDataObservable = useRef<BehaviorSubject<GameModel>>(new BehaviorSubject<GameModel>(getDefaultGameData(2)));
+    const gameData = useObservable<GameModel>(gameDataObservable.current);
 
     useEffect(() => {
-        const playerPositionService = new GameData(gameDataObservable.current);
+        const playerPositionService = new GameLogic(gameDataObservable.current);
 
         return () => playerPositionService.stop();
     }, [])
 
     return (
         <>
-            <Circle
-                x={config.defaultPlayerX} y={gameData.y} radius={config.radius}
-                fill='yellow' stroke='black'
-                strokeWidth={2}
-            />
+            {gameData.y.map((y, index) =>
+                <Circle
+                    key={index}
+                    x={config.defaultPlayerX} y={y} radius={config.radius}
+                    fill='yellow' stroke='black'
+                    strokeWidth={2}
+                />
+            )}
             {gameData.columns.map((columnData, index) =>
                 <>
                     <Rect
@@ -47,6 +50,9 @@ export const Game: React.FC = () => {
             )}
             {gameData.isGameOver && <Text fontSize={60} text="GAME OVER!!!"
                 wrap="char" align="center" fill={"red"} />}
+
+            <Text fontSize={30} text={`Score: ${gameData.score}`} y={config.height - 30}
+                wrap="char" align="center" fill={"blue"} />
         </>
     );
 }
