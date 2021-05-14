@@ -7,7 +7,7 @@ import { GameModel, getDefaultGameData } from './models/models';
 import { GameLogic } from './utils/GameLogic';
 
 export const Game: React.FC = () => {
-    const gameDataObservable = useRef<BehaviorSubject<GameModel>>(new BehaviorSubject<GameModel>(getDefaultGameData(2)));
+    const gameDataObservable = useRef<BehaviorSubject<GameModel>>(new BehaviorSubject<GameModel>(getDefaultGameData(100)));
     const gameData = useObservable<GameModel>(gameDataObservable.current);
 
     useEffect(() => {
@@ -52,6 +52,10 @@ export const Game: React.FC = () => {
                 wrap="char" align="center" fill={"red"} />}
 
             <Text fontSize={30} text={`Score: ${gameData.score}`} y={config.height - 30}
+                wrap="char" align="center" fill={"blue"} />
+            <Text fontSize={30} text={`Generation: ${gameData.generation}`} y={config.height - 30}
+                wrap="char" align="center" fill={"blue"} x={200} />
+            <Text fontSize={30} text={`Max Score: ${gameData.maxSore}`} y={config.height - 60}
                 wrap="char" align="center" fill={"blue"} />
         </>
     );

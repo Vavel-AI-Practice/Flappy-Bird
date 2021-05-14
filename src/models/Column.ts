@@ -10,7 +10,7 @@ export class Column {
     }
 
     public move(): number {
-        this.x -= 2;
+        this.x -= config.columnSpeed;
         if (this.x + config.columnWidth < 0) {
             this.fillColumnData();
 

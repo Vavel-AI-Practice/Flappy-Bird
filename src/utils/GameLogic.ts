@@ -4,6 +4,7 @@ import Emitter from './Emitter';
 import { GameModel, getDefaultGameData } from "../models/models";
 import Player from "../models/Player";
 import { config } from "../config";
+import { GeneticLogic } from "./GeneticLogic";
 
 export class GameLogic {
     private timerId?: NodeJS.Timeout | null;
@@ -12,6 +13,7 @@ export class GameLogic {
     private isStarted: boolean;
     private gameData: GameModel;
     private players: Player[] = [];
+    private genetic: GeneticLogic = new GeneticLogic();
 
     constructor(valueToUpdate: BehaviorSubject<GameModel>) {
         this.canTimerBeRun = true;
@@ -28,7 +30,7 @@ export class GameLogic {
 
         const defaultValue = valueToUpdate.getValue();
 
-        this.updateGameData(defaultValue);
+        this.updateGameData(defaultValue, true);
     }
 
     public start = () => {
@@ -49,25 +51,31 @@ export class GameLogic {
         clearTimeout(this.timerId);
     }
 
-    private updateGameData = (model: GameModel | null = null) => {
+    private updateGameData = (model: GameModel | null = null, isInit: boolean = false) => {
         if (model == null) {
             model = { ...this.gameData };
         } else {
-            this.resetPlayers(model);
+            this.resetPlayers(model, isInit);
         }
         this.gameData = model;
 
         Emitter.emit(this.playerId, this.gameData);
     }
 
-    private reset = () => {
+    private reset = (isInit: boolean) => {
         this.stop();
 
-        this.updateGameData(getDefaultGameData(this.players.length));
+        const maxScore = this.gameData.score > this.gameData.maxSore ? this.gameData.score : this.gameData.maxSore;
+        this.updateGameData(getDefaultGameData(this.players.length, maxScore), isInit);
     }
 
-    private resetPlayers = (data: GameModel) => {
+    private resetPlayers = (data: GameModel, isInit: boolean) => {
         this.players = Array.from({ length: data.y.length }, x => (new Player()));
+        if (isInit) {
+            this.genetic.init(data.y.length);
+        } else {
+            data.generation = this.genetic.nextGeneration();
+        }
     }
 
     private startMoving = () => {
@@ -83,10 +91,18 @@ export class GameLogic {
                     this.start();
                 } else {
                     this.stop();
+                    this.createNewGenerationAndStartAgain();
                 }
             }, 10
-
         )
+    }
+
+    private createNewGenerationAndStartAgain() {
+        // if (this.gameData.generation === 1) {
+        //     return;
+        // }
+        this.reset(false);
+        this.start();
     }
 
     private changeGameData = (): boolean => {
@@ -102,18 +118,43 @@ export class GameLogic {
         return !this.gameData.isGameOver;
     }
 
+    private getDataForNN(index: number): number[] {
+        const pipe = this.gameData.columns
+            .filter(x => x.x + config.columnWidth - config.defaultPlayerX + config.radius > 0)
+            .sort((unitA, unitB) => {
+                return unitA.x - unitB.x
+            })[0]
+        const distToPipes = pipe.x + config.columnWidth + config.radius - config.defaultPlayerX;
+        const distToHole = pipe.height1 + (config.columnHoleHeight / 2) - this.gameData.y[index];
+
+        return [distToPipes, distToHole];
+    }
+
     private changePlayerPosition() {
         this.players.forEach((player, index) => {
             if (!player.isGameOver) {
+                let isNeedToJump = this.isNeedToJump(index);
+                if (isNeedToJump) {
+                    player.jump();
+                }
+
                 let currentPosition = player.move();
 
                 if (this.checkCollision(index)) {
                     currentPosition = player.gameOver();
+                    this.genetic.fillFitness(index, player.distance);
+                    player.clearDistance();
                 }
 
                 this.gameData.y[index] = currentPosition;
             }
         })
+    }
+
+    public isNeedToJump(index: number): boolean {
+        const dataForNN = this.getDataForNN(index);
+        const outputs = this.genetic.feedForward(index, dataForNN);
+        return outputs[0] > 0.5;
     }
 
     private changeColumnPosition() {
@@ -143,7 +184,7 @@ export class GameLogic {
         }
 
         if (this.gameData.isGameOver || event.key === 'r') {
-            this.reset();
+            this.reset(event.key === 'r');
             return;
         }
 

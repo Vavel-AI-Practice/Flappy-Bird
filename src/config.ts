@@ -6,11 +6,12 @@ export const config = {
     width: width,
     height: height,
     radius: radius,
-    defaultPosition: height / 2 - radius,
+    defaultPosition: height / 2,
     defaultPlayerX: width / 5,
-    acceleration: 0.3, //feel like the weight of the bird
+    acceleration: 0.4, //feel like the weight of the bird. How fast it will fall down
     defaultSpeed: 1,
-    columnWidth: 100,
-    columnHoleHeight: 140,
-    bottomMargin: 54
+    columnWidth: 80,
+    columnHoleHeight: 145,
+    bottomMargin: 54,
+    columnSpeed: 2
 }
