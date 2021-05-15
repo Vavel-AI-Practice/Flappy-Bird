@@ -7,30 +7,36 @@ import { config } from "../config";
 import { GeneticLogic } from "./GeneticLogic";
 
 export class GameLogic {
+    private eventName = "gameDataUpdated";
     private timerId?: NodeJS.Timeout | null;
-    private playerId: string;
     private canTimerBeRun: boolean;
     private isStarted: boolean;
     private gameData: GameModel;
-    private players: Player[] = [];
-    private genetic: GeneticLogic = new GeneticLogic();
+    private players: Player[];
+    private genetic: GeneticLogic;
 
     constructor(valueToUpdate: BehaviorSubject<GameModel>) {
         this.canTimerBeRun = true;
         this.timerId = null;
-        this.playerId = this.getRandomString();
         this.isStarted = false;
         this.gameData = {} as GameModel;
+        this.players = [];
+        this.genetic = new GeneticLogic();
 
         document.addEventListener('keypress', this.onKeyPress);
 
-        Emitter.on(this.playerId, (value: GameModel) => {
+        Emitter.on(this.eventName, (value: GameModel) => {
             valueToUpdate.next(value);
         });
 
         const defaultValue = valueToUpdate.getValue();
 
         this.updateGameData(defaultValue, true);
+    }
+
+    public destroy = () => {
+        document.removeEventListener('keypress', this.onKeyPress);
+        this.stop();
     }
 
     public start = () => {
@@ -40,7 +46,7 @@ export class GameLogic {
         this.isStarted = true;
     }
 
-    public stop = (): void => {
+    private stop = (): void => {
         this.canTimerBeRun = false;
         this.isStarted = false;
 
@@ -52,14 +58,13 @@ export class GameLogic {
     }
 
     private updateGameData = (model: GameModel | null = null, isInit: boolean = false) => {
-        if (model == null) {
-            model = { ...this.gameData };
-        } else {
+        if (model !== null) {
             this.resetPlayers(model, isInit);
         }
-        this.gameData = model;
 
-        Emitter.emit(this.playerId, this.gameData);
+        this.gameData = model || { ...this.gameData };
+
+        Emitter.emit(this.eventName, this.gameData);
     }
 
     private reset = (isInit: boolean) => {
@@ -71,6 +76,7 @@ export class GameLogic {
 
     private resetPlayers = (data: GameModel, isInit: boolean) => {
         this.players = Array.from({ length: data.y.length }, x => (new Player()));
+
         if (isInit) {
             this.genetic.init(data.y.length);
         } else {
@@ -91,18 +97,11 @@ export class GameLogic {
                     this.start();
                 } else {
                     this.stop();
-                    this.createNewGenerationAndStartAgain();
+                    this.reset(false);
+                    this.start();
                 }
             }, 10
         )
-    }
-
-    private createNewGenerationAndStartAgain() {
-        // if (this.gameData.generation === 1) {
-        //     return;
-        // }
-        this.reset(false);
-        this.start();
     }
 
     private changeGameData = (): boolean => {
@@ -197,13 +196,5 @@ export class GameLogic {
                 player.jump();
             }
         })
-    }
-
-    private getRandomString = (): string => {
-        return this.getRandomNumber(100, 200).toString();
-    }
-
-    private getRandomNumber = (min: number, max: number): number => {
-        return Math.floor(Math.random() * Math.floor(max)) + min;
     }
 }

@@ -38,18 +38,18 @@ export class GeneticLogic {
 
             if (i === this.top_units) {
                 // offspring is made by a crossover of two best winners
-                parentA = Winners[0].copy();
-                parentB = Winners[1].copy();
+                parentA = new NeuralNetwork().copy(Winners[0]);
+                parentB = new NeuralNetwork().copy(Winners[1]);
                 offspring = this.crossOver(parentA, parentB);
 
             } else if (i <= this.nn.length - 2) {
                 // offspring is made by a crossover of two random winners
-                parentA = this.getRandomUnit(Winners).copy();
-                parentB = this.getRandomUnit(Winners).copy();
+                parentA = new NeuralNetwork().copy(this.getRandomUnit(Winners));
+                parentB = new NeuralNetwork().copy(this.getRandomUnit(Winners));
                 offspring = this.crossOver(parentA, parentB);
             } else {
                 // offspring is a random winner
-                offspring = this.getRandomUnit(Winners).copy();
+                offspring = new NeuralNetwork().copy(this.getRandomUnit(Winners));
             }
 
             // mutate the offspring
@@ -67,7 +67,7 @@ export class GeneticLogic {
     }
 
     private generateRandomNN(length: number) {
-        this.nn = Array.from({ length }, x => (new NeuralNetwork([2, 6, 1])));
+        this.nn = Array.from({ length }, x => (new NeuralNetwork().init([2, 6, 1])));
     }
 
     // performs random mutations on the offspring

@@ -13,7 +13,7 @@ export const Game: React.FC = () => {
     useEffect(() => {
         const playerPositionService = new GameLogic(gameDataObservable.current);
 
-        return () => playerPositionService.stop();
+        return () => playerPositionService.destroy();
     }, [])
 
     return (
